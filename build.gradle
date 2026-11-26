@@ -1,0 +1,26 @@
+plugins { id 'com.android.application' version '8.7.3' }
+android {
+    namespace 'dev.amusfq.cctv_cam'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'dev.amusfq.cctv_cam'
+        minSdk 28
+        targetSdk 33
+        versionCode 1
+        versionName '1.0'
+    }
+    sourceSets.main.jniLibs.srcDir(layout.buildDirectory.dir('native'))
+    packaging.jniLibs.useLegacyPackaging = true
+}
+def serverFile = layout.buildDirectory.file('native/arm64-v8a/libstream.so')
+tasks.register('buildServer', Exec) {
+    workingDir 'server'
+    inputs.files(fileTree('server'))
+    outputs.file(serverFile)
+    environment 'GOOS', 'android'
+    environment 'GOARCH', 'arm64'
+    environment 'CGO_ENABLED', '0'
+    doFirst { serverFile.get().asFile.parentFile.mkdirs() }
+    commandLine 'go', 'build', '-trimpath', '-ldflags=-s -w', '-o', serverFile.get().asFile.absolutePath, '.'
+}
+preBuild.dependsOn buildServer
